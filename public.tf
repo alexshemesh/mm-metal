@@ -1,56 +1,48 @@
 /*
   Web Servers
 */
-resource "aws_security_group" "web" {
-    name = "vpc_web"
+
+
+resource "aws_security_group" "pub" {
+    name = "vpc_pub"
     description = "Allow incoming HTTP connections."
 
+    
     ingress {
-        from_port = 80
-        to_port = 80
+        from_port = 1194
+        to_port = 1194
         protocol = "tcp"
         cidr_blocks = ["0.0.0.0/0"]
     }
+    
     ingress {
-        from_port = 443
-        to_port = 443
+        from_port = 22
+        to_port = 22
         protocol = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
+        cidr_blocks = ["${var.vpc_cidr}"]
     }
-    ingress {
-        from_port = -1
-        to_port = -1
-        protocol = "icmp"
+    
+    egress {
+        from_port   = 0
+        to_port     = 0
+        protocol    = "-1"
         cidr_blocks = ["0.0.0.0/0"]
     }
 
-    egress { # SQL Server
-        from_port = 1433
-        to_port = 1433
-        protocol = "tcp"
-        cidr_blocks = ["${var.private_subnet_cidr}"]
-    }
-    egress { # MySQL
-        from_port = 3306
-        to_port = 3306
-        protocol = "tcp"
-        cidr_blocks = ["${var.private_subnet_cidr}"]
-    }
-
-    vpc_id = "${aws_vpc.default.id}"
+    vpc_id = "${var.vpc_id}"
 
     tags {
         Name = "WebServerSG"
     }
 }
 
-resource "aws_instance" "web-1" {
+resource "aws_instance" "openvpn" {
     ami = "${lookup(var.amis, var.aws_region)}"
-    availability_zone = "eu-west-1a"
-    instance_type = "m1.small"
+    availability_zone = "${var.aws_availability_zone}"
+    instance_type = "t2.micro"
     key_name = "${var.aws_key_name}"
-    vpc_security_group_ids = ["${aws_security_group.web.id}"]
-    subnet_id = "${aws_subnet.eu-west-1a-public.id}"
+    vpc_security_group_ids = ["${aws_security_group.pub.id}"]
+    subnet_id = "${aws_subnet.prod-public.id}"
     associate_public_ip_address = true
     source_dest_check = false
 
@@ -59,7 +51,18 @@ resource "aws_instance" "web-1" {
     }
 }
 
-resource "aws_eip" "web-1" {
-    instance = "${aws_instance.web-1.id}"
+resource "aws_eip" "openvpn" {
+    instance = "${aws_instance.openvpn.id}"
     vpc = true
+}
+
+
+resource "aws_internet_gateway" "default" {
+  vpc_id = "${var.vpc_id}"
+}
+
+resource "aws_route" "internet_access" {
+  route_table_id         = "rtb-54b2e632"
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = "${aws_internet_gateway.default.id}"
 }
