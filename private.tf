@@ -27,7 +27,7 @@ resource "aws_security_group" "db" {
     }
 
 
-    vpc_id = "${var.vpc_id}"
+    vpc_id = "${aws_vpc.default.id}"
 
     tags {
         Name = "DBServerSG"

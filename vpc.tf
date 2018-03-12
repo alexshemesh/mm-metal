@@ -1,5 +1,5 @@
 
-/*
+
 resource "aws_vpc" "default" {
     cidr_block = "${var.vpc_cidr}"
     enable_dns_hostnames = true
@@ -7,10 +7,6 @@ resource "aws_vpc" "default" {
         Name = "terraform-aws-vpc"
     }
 }
-*/
-
-
-
 
 resource "aws_eip" "mmPubEip" {
   vpc = true
@@ -23,14 +19,11 @@ resource "aws_nat_gateway" "default" {
   depends_on = ["aws_internet_gateway.default"]
 }
 
-
-
-
 /*
   Public Subnet
 */
 resource "aws_subnet" "prod-public" {
-    vpc_id = "${var.vpc_id}"
+    vpc_id = "${aws_vpc.default.id}"
 
     cidr_block = "${var.public_subnet_cidr}"
     availability_zone = "${var.aws_availability_zone}"
@@ -41,7 +34,7 @@ resource "aws_subnet" "prod-public" {
 }
 
 resource "aws_route_table" "prod-public" {
-    vpc_id = "${var.vpc_id}"
+    vpc_id = "${aws_vpc.default.id}"
 
     route {
         cidr_block = "0.0.0.0/0"
@@ -62,7 +55,7 @@ resource "aws_route_table_association" "prod-public" {
   Private Subnet
 */
 resource "aws_subnet" "prod-private" {
-    vpc_id = "${var.vpc_id}"
+    vpc_id = "${aws_vpc.default.id}"
 
     cidr_block = "${var.private_subnet_cidr}"
     availability_zone = "${var.aws_availability_zone}"
@@ -73,7 +66,7 @@ resource "aws_subnet" "prod-private" {
 }
 
 resource "aws_vpn_gateway" "vpn_gateway" {
-  vpc_id = "${var.vpc_id}"
+  vpc_id = "${aws_vpc.default.id}"
 
   tags = {
     Name = "vpn_gateway"
@@ -81,7 +74,7 @@ resource "aws_vpn_gateway" "vpn_gateway" {
 }
 
 resource "aws_route_table" "prod-private" {
-    vpc_id = "${var.vpc_id}"
+    vpc_id = "${aws_vpc.default.id}"
     propagating_vgws = ["${aws_vpn_gateway.vpn_gateway.id}"]
 
     tags {

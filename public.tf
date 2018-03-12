@@ -3,6 +3,7 @@
 */
 
 
+
 resource "aws_security_group" "pub" {
     name = "vpc_pub"
     description = "Allow incoming HTTP connections."
@@ -19,8 +20,9 @@ resource "aws_security_group" "pub" {
         from_port = 22
         to_port = 22
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidr}"]
+        cidr_blocks = ["${var.vpc_cidr}","172.31.0.0/16"]
     }
+    
     
     egress {
         from_port   = 0
@@ -29,7 +31,7 @@ resource "aws_security_group" "pub" {
         cidr_blocks = ["0.0.0.0/0"]
     }
 
-    vpc_id = "${var.vpc_id}"
+    vpc_id = "${aws_vpc.default.id}"
 
     tags {
         Name = "WebServerSG"
@@ -58,11 +60,11 @@ resource "aws_eip" "openvpn" {
 
 
 resource "aws_internet_gateway" "default" {
-  vpc_id = "${var.vpc_id}"
+  vpc_id = "${aws_vpc.default.id}"
 }
 
 resource "aws_route" "internet_access" {
-  route_table_id         = "rtb-54b2e632"
+  route_table_id         = "${aws_vpc.default.default_route_table_id}"
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = "${aws_internet_gateway.default.id}"
 }
